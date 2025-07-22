@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Persistent AI Chat</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 2rem;
+    }
+    #chat {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      height: 70vh;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 1rem;
+    }
+    .user { font-weight: bold; color: #2c3e50; }
+    .assistant { color: #27ae60; }
+    #inputArea {
+      max-width: 600px;
+      margin: 1rem auto 0;
+      display: flex;
+    }
+    #messageInput {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    #sendBtn {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat"></div>
+  <div id="inputArea">
+    <input type="text" id="messageInput" placeholder="Type your message here..." />
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('messageInput');
+    const button = document.getElementById('sendBtn');
+
+    function addMessage(role, content) {
+      const div = document.createElement('div');
+      div.className = 'message ' + role;
+      div.innerHTML = '<strong>' + role + ':</strong> ' + content;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    button.onclick = async () => {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage('user', text);
+      input.value = '';
+      const res = await fetch('/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      addMessage('assistant', data.reply);
+    };
+  </script>
+</body>
+</html>
