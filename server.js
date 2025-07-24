@@ -44,9 +44,7 @@ app.post("/message", async (req, res) => {
     const messages = [
       {
         role: "system",
-        content: "You are a helpful assistant with persistent memory. Use the following memory as context:
-
-" + memory,
+        content: "You are a helpful assistant with persistent memory. Use the following memory as context:\n\n" + memory,
       },
       ...chatHistory,
     ];
