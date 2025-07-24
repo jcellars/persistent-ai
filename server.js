@@ -29,35 +29,50 @@ app.use(express.static(path.join(__dirname, "public")));
 let chatHistory = [];
 
 app.post("/message", async (req, res) => {
-  const userInput = req.body.message;
+  try {
+    const userInput = req.body.message;
 
-  chatHistory.push({ role: "user", content: userInput });
+    if (!userInput) {
+      return res.status(400).json({ error: "No message provided" });
+    }
 
-  const contextDoc = await memoryDoc.get();
-  const memory = contextDoc.exists ? contextDoc.data().summary || "" : "";
+    chatHistory.push({ role: "user", content: userInput });
 
-  const messages = [
-    {
-      role: "system",
-      content: "You are a helpful assistant with persistent memory. Use the following memory as context:\n\n" + memory,
-    },
-    ...chatHistory,
-  ];
+    const contextDoc = await memoryDoc.get();
+    const memory = contextDoc.exists ? contextDoc.data().summary || "" : "";
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4-turbo",
-    messages,
-  });
+    const messages = [
+      {
+        role: "system",
+        content: "You are a helpful assistant with persistent memory. Use the following memory as context:
 
-  const reply = response.choices[0].message.content;
-  chatHistory.push({ role: "assistant", content: reply });
+" + memory,
+      },
+      ...chatHistory,
+    ];
 
-  await memoryDoc.set({ chatMemory: chatHistory }, { merge: true });
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      messages,
+    });
 
-  const sessionId = new Date().toISOString().replace(/[:.]/g, "-");
-  fs.writeFileSync(path.join(__dirname, "logs", `${sessionId}.json`), JSON.stringify(chatHistory, null, 2), "utf-8");
+    const reply = response.choices[0].message.content;
+    chatHistory.push({ role: "assistant", content: reply });
 
-  res.json({ reply });
+    await memoryDoc.set({ chatMemory: chatHistory }, { merge: true });
+
+    const sessionId = new Date().toISOString().replace(/[:.]/g, "-");
+    fs.writeFileSync(
+      path.join(__dirname, "logs", `${sessionId}.json`),
+      JSON.stringify(chatHistory, null, 2),
+      "utf-8"
+    );
+
+    res.json({ reply });
+  } catch (error) {
+    console.error("❌ Error in /message route:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 app.listen(PORT, () => {
