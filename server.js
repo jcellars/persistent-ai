@@ -49,12 +49,18 @@ app.post("/message", async (req, res) => {
       ...chatHistory,
     ];
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      messages,
-    });
+    let reply = "Sorry, something went wrong. Please try again later.";
 
-    const reply = response.choices[0].message.content;
+try {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4-turbo",
+    messages,
+  });
+
+  reply = response.choices[0].message.content;
+} catch (err) {
+  console.error("❌ OpenAI API error:", err);
+}
     chatHistory.push({ role: "assistant", content: reply });
 
     await memoryDoc.set({ chatMemory: chatHistory }, { merge: true });
