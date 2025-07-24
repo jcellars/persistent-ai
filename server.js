@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -51,26 +50,31 @@ app.post("/message", async (req, res) => {
 
     let reply = "Sorry, something went wrong. Please try again later.";
 
-try {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4-turbo",
-    messages,
-  });
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-turbo",
+        messages,
+      });
 
-  reply = response.choices[0].message.content;
-} catch (err) {
-  console.error("❌ OpenAI API error:", err);
-}
+      reply = response.choices[0].message.content;
+    } catch (err) {
+      console.error("❌ OpenAI API error:", err);
+    }
+
     chatHistory.push({ role: "assistant", content: reply });
 
     await memoryDoc.set({ chatMemory: chatHistory }, { merge: true });
 
+    // ✅ Safely create logs directory and write file
     const sessionId = new Date().toISOString().replace(/[:.]/g, "-");
-    fs.writeFileSync(
-      path.join(__dirname, "logs", `${sessionId}.json`),
-      JSON.stringify(chatHistory, null, 2),
-      "utf-8"
-    );
+    const logDir = path.join(__dirname, "logs");
+    const logPath = path.join(logDir, `${sessionId}.json`);
+
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir);
+    }
+
+    fs.writeFileSync(logPath, JSON.stringify(chatHistory, null, 2), "utf-8");
 
     res.json({ reply });
   } catch (error) {
